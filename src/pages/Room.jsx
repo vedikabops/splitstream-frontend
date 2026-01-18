@@ -104,14 +104,14 @@ function Room() {
       isIncomingEvent.current = true;
       if (playerRef.current && data.timestamp !== undefined) {
         const currentTime = playerRef.current.getCurrentTime();
-        if (Math.abs(currentTime - data.timestamp) > 2) {
+        if (Math.abs(currentTime - data.timestamp) > 3) {
           playerRef.current.seekTo(data.timestamp, true);
         }
         playerRef.current.playVideo();
       }
       setTimeout(() => {
         isIncomingEvent.current = false;
-      }, 100);
+      }, 300);
     });
 
     socket.on('video-pause', (data) => {
@@ -122,7 +122,7 @@ function Room() {
       }
       setTimeout (() => {
         isIncomingEvent.current = false;
-      }, 100);
+      }, 300);
     });
 
     socket.on('video-seek', (data) => {
