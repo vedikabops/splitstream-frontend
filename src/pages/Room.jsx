@@ -104,14 +104,14 @@ function Room() {
       isIncomingEvent.current = true;
       if (playerRef.current && data.timestamp !== undefined) {
         const currentTime = playerRef.current.getCurrentTime();
-        if (Math.abs(currentTime - data.timestamp) > 3) {
+        if (Math.abs(currentTime - data.timestamp) > 2) {
           playerRef.current.seekTo(data.timestamp, true);
         }
         playerRef.current.playVideo();
       }
       setTimeout(() => {
         isIncomingEvent.current = false;
-      }, 300);
+      }, 100);
     });
 
     socket.on('video-pause', (data) => {
@@ -122,7 +122,7 @@ function Room() {
       }
       setTimeout (() => {
         isIncomingEvent.current = false;
-      }, 300);
+      }, 100);
     });
 
     socket.on('video-seek', (data) => {
@@ -189,9 +189,21 @@ function Room() {
             'onReady': (event) => {
               setIsLoading(false);
               // SET UP SEEK DETECTION
-              setInterval (() => {
+              // remove the following section - seeks every second - causes issues when delay
+              /*setInterval (() => {
                 if (playerRef.current && playerRef.current.getPlayerState) {
                   onPlayerSeek();
+                }
+              }, 1000);*/
+              let lastKnownTime = 0;
+              setInterval(() => {
+                if (playerRef.current && playerRef.current.getPlayerState){
+                  const currentTime = playerRef.current.getCurrentTime();
+                  // only emit if user manually seeks i.e. jumps more than 2 seconds
+                  if (Math.abs(currentTime - lastKnownTime) > 2 && !isIncomingEvent.current && !isSeeking.current) {
+                    onPlayerSeek();
+                  }
+                  lastKnownTime = currentTime;
                 }
               }, 1000);
             }
