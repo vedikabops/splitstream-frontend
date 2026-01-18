@@ -58,6 +58,7 @@ function Room() {
   const onPlayerSeek = () => {
     if (isIncomingEvent.current || isSeeking.current) return;
 
+    console.log('Sending seek event, timestamp:', currentTime);
     const currentTime = playerRef.current.getCurrentTime();
     socketRef.current.emit('seek-video', { roomId, timestamp: currentTime });
   };
@@ -101,6 +102,7 @@ function Room() {
 
     // Listen for Play/Pause from others
     socket.on('video-play', (data) => {
+      console.log('Received play event, timestamp:', data.timestamp);
       isIncomingEvent.current = true;
       if (playerRef.current && data.timestamp !== undefined) {
         const currentTime = playerRef.current.getCurrentTime();
@@ -115,6 +117,7 @@ function Room() {
     });
 
     socket.on('video-pause', (data) => {
+      console.log('Received pause event, timestamp:', data.timestamp);
       isIncomingEvent.current = true;
       if (playerRef.current && data.timestamp !== undefined) {
         playerRef.current.seekTo(data.timestamp, true);
@@ -126,6 +129,7 @@ function Room() {
     });
 
     socket.on('video-seek', (data) => {
+      console.log('Received seek event, timestamp:', data.timestamp);
       isIncomingEvent.current = true;
       isSeeking.current = true;
       if (playerRef.current && data.timestamp !== undefined) {
