@@ -19,7 +19,7 @@ function Home() {
 
     //refreshing stats every 10 secs
     const interval = setInterval(() => {
-      fetch('http://localhost:5000/health')
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/health`)
         .then(res => res.json())
         .then(data => {
           setActiveRooms(data.activeRooms || 0);
