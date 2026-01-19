@@ -37,6 +37,7 @@ function Room() {
   const [showCopied, setShowCopied] = useState(false);
   const [showCodeCopied, setShowCodeCopied] = useState(false);
   const usernameInputRef = useRef(null);
+  const lastEventTime = useRef(0);
 
   const onPlayerStateChange = (event) => {
     // If the change came from the socket, do nothing
@@ -106,6 +107,12 @@ function Room() {
 
     // Listen for Play/Pause from others
     socket.on('video-play', (data) => {
+      const now = Date.now();
+      if (now-lastEventTime.current < 200) {
+        console.log('ignoring rapid play event');
+        return;
+      }
+      lastEventTime.current = now;
       console.log('Received play event, timestamp:', data.timestamp);
       isIncomingEvent.current = true;
       if (playerRef.current && data.timestamp !== undefined) {
@@ -121,6 +128,12 @@ function Room() {
     });
 
     socket.on('video-pause', (data) => {
+      const now = Date.now();
+      if (now-lastEventTime.current < 200) {
+        console.log('ignoring rapid play event');
+        return;
+      }
+      lastEventTime.current = now;
       console.log('Received pause event, timestamp:', data.timestamp);
       isIncomingEvent.current = true;
       if (playerRef.current && data.timestamp !== undefined) {
@@ -133,6 +146,12 @@ function Room() {
     });
 
     socket.on('video-seek', (data) => {
+      const now = Date.now();
+      if (now-lastEventTime.current < 200) {
+        console.log('ignoring rapid play event');
+        return;
+      }
+      lastEventTime.current = now;
       console.log('Received seek event, timestamp:', data.timestamp);
       isIncomingEvent.current = true;
       isSeeking.current = true;
