@@ -38,6 +38,8 @@ function Room() {
   const [showCodeCopied, setShowCodeCopied] = useState(false);
   const usernameInputRef = useRef(null);
   const lastEventTime = useRef(0);
+  const [isHost, setIsHost] = useState(false);
+  const initiatingAction = useRef(false);
 
   const onPlayerStateChange = (event) => {
     // If the change came from the socket, do nothing
@@ -107,8 +109,9 @@ function Room() {
 
     // Listen for Play/Pause from others
     socket.on('video-play', (data) => {
+      initiatingAction.current = true;
       const now = Date.now();
-      if (now-lastEventTime.current < 500) {
+      if (now-lastEventTime.current < 200) {
         console.log('ignoring rapid play event');
         return;
       }
@@ -123,13 +126,15 @@ function Room() {
         playerRef.current.playVideo();
       }
       setTimeout(() => {
-        isIncomingEvent.current = false;
-      }, 300);
+        //isIncomingEvent.current = false;
+        initiatingAction.current = false;
+      }, 500);
     });
 
     socket.on('video-pause', (data) => {
+      initiatingAction.current = true;
       const now = Date.now();
-      if (now-lastEventTime.current < 500) {
+      if (now-lastEventTime.current < 200) {
         console.log('ignoring rapid play event');
         return;
       }
@@ -141,13 +146,14 @@ function Room() {
         playerRef.current.pauseVideo();
       }
       setTimeout (() => {
-        isIncomingEvent.current = false;
-      }, 300);
+        //isIncomingEvent.current = false;
+        initiatingAction.current = false;
+      }, 500);
     });
 
     socket.on('video-seek', (data) => {
       const now = Date.now();
-      if (now-lastEventTime.current < 500) {
+      if (now-lastEventTime.current < 200) {
         console.log('ignoring rapid play event');
         return;
       }
@@ -161,7 +167,7 @@ function Room() {
       setTimeout (() => {
         isIncomingEvent.current = false;
         isSeeking.current = false;
-      }, 1000);
+      }, 500);
     });
 
     socket.on('receive-message', (message) => {
@@ -227,7 +233,7 @@ function Room() {
                 if (playerRef.current && playerRef.current.getPlayerState){
                   const currentTime = playerRef.current.getCurrentTime();
                   // only emit if user manually seeks i.e. jumps more than 2 seconds
-                  if (Math.abs(currentTime - lastKnownTime) > 3 && !isIncomingEvent.current && !isSeeking.current) {
+                  if (Math.abs(currentTime - lastKnownTime) > 2 && !isIncomingEvent.current && !isSeeking.current) {
                     onPlayerSeek();
                   }
                   lastKnownTime = currentTime;
