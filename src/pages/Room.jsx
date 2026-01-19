@@ -44,6 +44,10 @@ function Room() {
       isIncomingEvent.current = false;
       return;
     }
+    // ignore state 3
+    if (event.data === 3) {
+      return;
+    }
 
     // event.data: 1 = Playing, 2 = Paused
     if (event.data === window.YT.PlayerState.PLAYING) {
