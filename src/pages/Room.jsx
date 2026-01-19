@@ -108,7 +108,7 @@ function Room() {
     // Listen for Play/Pause from others
     socket.on('video-play', (data) => {
       const now = Date.now();
-      if (now-lastEventTime.current < 200) {
+      if (now-lastEventTime.current < 500) {
         console.log('ignoring rapid play event');
         return;
       }
@@ -124,12 +124,12 @@ function Room() {
       }
       setTimeout(() => {
         isIncomingEvent.current = false;
-      }, 100);
+      }, 300);
     });
 
     socket.on('video-pause', (data) => {
       const now = Date.now();
-      if (now-lastEventTime.current < 200) {
+      if (now-lastEventTime.current < 500) {
         console.log('ignoring rapid play event');
         return;
       }
@@ -142,12 +142,12 @@ function Room() {
       }
       setTimeout (() => {
         isIncomingEvent.current = false;
-      }, 100);
+      }, 300);
     });
 
     socket.on('video-seek', (data) => {
       const now = Date.now();
-      if (now-lastEventTime.current < 200) {
+      if (now-lastEventTime.current < 500) {
         console.log('ignoring rapid play event');
         return;
       }
@@ -161,7 +161,7 @@ function Room() {
       setTimeout (() => {
         isIncomingEvent.current = false;
         isSeeking.current = false;
-      }, 500);
+      }, 1000);
     });
 
     socket.on('receive-message', (message) => {
@@ -227,7 +227,7 @@ function Room() {
                 if (playerRef.current && playerRef.current.getPlayerState){
                   const currentTime = playerRef.current.getCurrentTime();
                   // only emit if user manually seeks i.e. jumps more than 2 seconds
-                  if (Math.abs(currentTime - lastKnownTime) > 2 && !isIncomingEvent.current && !isSeeking.current) {
+                  if (Math.abs(currentTime - lastKnownTime) > 3 && !isIncomingEvent.current && !isSeeking.current) {
                     onPlayerSeek();
                   }
                   lastKnownTime = currentTime;
