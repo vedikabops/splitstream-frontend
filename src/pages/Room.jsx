@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 
 const extractVideoId = (url) => {
@@ -15,6 +15,7 @@ const extractVideoId = (url) => {
 };
 
 function Room() {
+  const navigate = useNavigate();
   const { roomId } = useParams();
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [videoId, setVideoId] = useState('');
@@ -324,6 +325,13 @@ function Room() {
     });
   };
 
+  const handleLeaveRoom = () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+    navigate('/');
+  };
+
   return (
     <>
       {showUsernameModal && (
@@ -358,16 +366,20 @@ function Room() {
         <div className="flex gap-3">
           <button 
             onClick={copyRoomCode}
-            className="bg-[#d3869b] hover:bg-[#b16286] text-[#282828] px-4 py-2 rounded-lg font-semibold transition-colors relative"
+            className="bg-[#d3869b] hover:bg-[#b16286] text-[#282828] px-2 py-2 rounded-lg font-semibold transition-colors relative"
           >
             {showCodeCopied ? 'Code Copied!' : 'Copy Room Code'}
           </button>
           <button 
             onClick={copyRoomLink}
-            className="bg-[#b8bb26] hover:bg-[#98971a] text-[#282828] px-4 py-2 rounded-lg font-semibold transition-colors relative"
+            className="bg-[#b8bb26] hover:bg-[#98971a] text-[#282828] px-2 py-2 rounded-lg font-semibold transition-colors relative"
           >
-            {showCopied ? 'Copied!' : 'Share Room Link'}
+            {showCopied ? 'Copied!' : 'Copy Room Link'}
           </button>
+          <button 
+            onClick={handleLeaveRoom}
+            className="bg-[#83a598] hover:bg-[#458588] text-[#282828] px-2 py-2 rounded-lg font-semibold transition-colors relative"
+          >Leave Room</button>
         </div>
       </div>
 
