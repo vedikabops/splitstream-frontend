@@ -313,7 +313,13 @@ function Room() {
                   lastKnownTime = currentTime;
                 }
               }, 1000);
-            }
+            },
+            'onError': (event) => {
+              console.warn('YouTube Player Error:', event.data);
+              if (playlistId) setError('This playlist may be private, unavailable, or restricted. ' + 'Try a public playlist or a single video.');
+              else setError('This video is unavailable or restricted.');
+              setIsLoading(false);
+            },
           },
         });
       }
