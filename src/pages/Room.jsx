@@ -467,72 +467,75 @@ function Room() {
         </div>
       )}
     <div className="min-h-screen bg-[#282828] p-6">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-        <h1 className="text-3xl font-bold text-[#ebdbb2]">Room: <span className="text-[#fe8019]">{roomId}</span>
-        </h1>
-        <p className="text-[#928374] text-sm">Share this code with friends to invite them</p>
-        </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={copyRoomCode}
-            className="bg-[#d3869b] hover:bg-[#b16286] text-[#282828] px-2 py-2 rounded-lg font-semibold transition-colors relative"
-          >
-            {showCodeCopied ? 'Code Copied!' : 'Copy Room Code'}
-          </button>
-          <button 
-            onClick={copyRoomLink}
-            className="bg-[#b8bb26] hover:bg-[#98971a] text-[#282828] px-2 py-2 rounded-lg font-semibold transition-colors relative"
-          >
-            {showCopied ? 'Copied!' : 'Copy Room Link'}
-          </button>
-          <button 
-            onClick={handleLeaveRoom}
-            className="bg-[#83a598] hover:bg-[#458588] text-[#282828] px-2 py-2 rounded-lg font-semibold transition-colors relative"
-          >Leave Room</button>
+      <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          <div>
+            <h1 className="text-3xl font-bold text-[#ebdbb2]">Room: <span className="text-[#fe8019]">{roomId}</span>
+            </h1>
+            <p className="text-[#928374] text-sm">Share this code with friends to invite them</p>
+          </div>
+          <div className="grid grid-cols-2 md:flex md:gap-3 w-full md:w-auto gap-2">
+            <button 
+              onClick={copyRoomCode}
+              className="bg-[#d3869b] hover:bg-[#b16286] text-[#282828] px-2 py-2 rounded-lg font-semibold transition-colors relative"
+            >
+              {showCodeCopied ? 'Code Copied!' : 'Copy Room Code'}
+            </button>
+            <button 
+              onClick={copyRoomLink}
+              className="bg-[#b8bb26] hover:bg-[#98971a] text-[#282828] px-2 py-2 rounded-lg font-semibold transition-colors relative"
+            >
+              {showCopied ? 'Copied!' : 'Copy Room Link'}
+            </button>
+            <button 
+              onClick={handleLeaveRoom}
+              className="col-span-2 md:col-auto bg-[#83a598] hover:bg-[#458588] text-[#282828] px-2 py-2 rounded-lg font-semibold transition-colors relative"
+            >Leave Room</button>
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-6 h-[calc(100vh-120px)]">
-        <div className="w-[70%] flex flex-col">
-          <div className="bg-[#3c3836] rounded-lg p-6 border border-[#504945] flex-1 flex flex-col">
-            <div className="flex gap-3 mb-6">
-              <input
-                type="text"
-                value={youtubeUrl}
-                onChange={(e) => {
-                  setYoutubeUrl(e.target.value);
-                  setError('');
-                }}
-                onKeyPress={(e) => e.key === 'Enter' && handleLoadVideo()}
-                className="flex-1 bg-[#504945] text-[#ebdbb2] px-4 py-3 rounded-lg"
-                placeholder="Paste YouTube URL..."
-              />
-              <button onClick={handleLoadVideo} disabled={isLoading} className="bg-[#fe8019] hover:bg-[#d65d0e] disabled:bg-[#504945] text-[#282828] px-6 py-3 rounded-lg font-bold transition-colors">
-                {isLoading ? 'Loading...' : 'Load Video'}
-              </button>
-            </div>
-
-            {error && (
-              <div className="mb-4 bg-[#fb4934] bg-opacity-20 border border-[#fb4934] text-[#fb4934] px-4 py-3 rounded-lg">
-                {error}
+      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-120px)]">
+        <div className="w-full lg:w-[70%] flex flex-col">
+            <div className="bg-[#3c3836] rounded-lg p-6 border border-[#504945] lg:flex-1 flex flex-col">
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={youtubeUrl}
+                  onChange={(e) => {
+                    setYoutubeUrl(e.target.value);
+                    setError('');
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && handleLoadVideo()}
+                  className="flex-1 min-w-0 bg-[#504945] text-[#ebdbb2] px-3 py-2 lg:py-3 rounded-lg text-sm lg:text-base"
+                  placeholder="Paste YouTube URL..."
+                />
+                <button onClick={handleLoadVideo} disabled={isLoading} className="flex-shrink-0 bg-[#fe8019] hover:bg-[#d65d0e] disabled:bg-[#504945] text-[#282828] px-6 py-3 rounded-lg font-bold transition-colors">
+                  {isLoading ? 'Loading...' : <span className="hidden sm:inline">Load Video</span>}
+                  {!isLoading && <span className="sm:hidden">Load</span>}
+                </button>
               </div>
-            )}
 
-            <div className="flex-1 bg-black rounded-lg overflow-hidden relative">
-              {/* IMPORTANT: Use a div with a specific ID, not an iframe tag */}
-              <div id="youtube-player" className="w-full h-full"></div>
-              
-              {!videoId && !playlistId && (
-                <div className="absolute inset-0 flex items-center justify-center text-[#928374]">
-                  No video loaded
+              {error && (
+                <div className="mb-4 bg-[#fb4934] bg-opacity-20 border border-[#fb4934] text-[#fb4934] px-4 py-3 rounded-lg">
+                  {error}
                 </div>
               )}
+
+              <div className="w-full aspect-video bg-black rounded-lg overflow-hidden relative">
+                {/* IMPORTANT: Use a div with a specific ID, not an iframe tag */}
+                <div id="youtube-player" className="absolute inset-0 w-full h-full"></div>
+                
+                {!videoId && !playlistId && (
+                  <div className="absolute inset-0 flex items-center justify-center text-[#928374]">
+                    No video loaded
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
         </div>
 
-        <div className="w-[30%] bg-[#3c3836] rounded-lg border border-[#504945] flex flex-col">
+        <div className="w-full lg:w-[30%] h-[500px] lg:h-full bg-[#3c3836] rounded-lg border border-[#504945] flex flex-col">
           {/* Users list */}
           <div className="bg-[#3c3836] rounded-lg border border-[#504945] p-4">
             <h2 className="text-lg font-bold text-[#ebdbb2] mb-3">
@@ -564,7 +567,7 @@ function Room() {
                     <span className="text-xs text-[#928374] italic">{msg.message}</span>
                   </div>
                 ) : (
-                  <div key={index} className={`p-3 rounded-lg ${msg.username === username ? 'bg-[#fe8019] bg-opacity-30 ml-8' : 'bg-[#504945] mr-8'}`}>
+                  <div key={index} className={`p-2 lg:p-3 rounded-lg ${msg.username === username ? 'bg-[#fe8019] bg-opacity-30 ml-4 lg:ml-8' : 'bg-[#504945] mr-4 lg:mr-8'}`}>
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-bold text-[#ebdbb2] text-sm">{msg.username}</span>
                       <span className="text-xs text-[#928374]">{formatTime(msg.timestamp)}</span>
@@ -578,19 +581,20 @@ function Room() {
           </div>
 
           {/*Message Input*/}
-          <div className="p-4 border-t border-[#504945]">
+          <div className="p-3 lg:p-4 border-t border-[#504945]">
             <div className="flex gap-2">
-              <input type = "text"
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Type a message...."
-              className="flex-1 bg-[#504945] text-[#ebdbb2] px-3 py-3 rounded-lg border border-[#3c3836] focus:outline-none focus:ring-2 focus:ring-[#fe8019] text-sm"
+              <input 
+                type = "text"
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Type a message...."
+                className="flex-1 min-w-0 bg-[#504945] text-[#ebdbb2] px-3 py-2 rounded-lg border border-[#3c3836] focus:outline-none focus:ring-2 focus:ring-[#fe8019] text-sm"
               />
               <button
               onClick={handleSendMessage}
               disabled={!messageInput.trim()}
-              className="bg-[#fe8019] hover:bg-[#d65d0e] disabled:bg-[#504945] disabled:cursor-not-allowed text-[#282828] px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+              className="flex-shrink-0 bg-[#fe8019] hover:bg-[#d65d0e] disabled:bg-[#504945] disabled:cursor-not-allowed text-[#282828] px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
               >
                 Send
               </button>
