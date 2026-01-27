@@ -34,6 +34,12 @@ const parseYtUrl = (url) => {
   const playlistId = extractPlaylistId(url);
   const index = extractIndex(url);
   if (videoId && playlistId) {
+    if (playlistId.startsWith('RD')) {
+      return {
+        type: 'video',
+        videoId,
+      };
+    }
     return {
       type: 'playlist',
       playlistId,
