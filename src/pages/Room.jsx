@@ -14,11 +14,54 @@ const extractVideoId = (url) => {
   return null;
 };
 
+// check if URL is a playlist
+const isPlaylistUrl = (url) => {
+  return url.includes('list=');
+};
+
+const extractPlaylistId = (url) => {
+  const match = url.match(/[?&]list=([^&]+)/);
+  return match ? match[1] : null;
+};
+
+const extractIndex = (url) => {
+  const match = url.match(/[?&](index|start_radio)=(\d+)/);
+  return match ? match[2] : null;
+};
+
+const parseYtUrl = (url) => {
+  const videoId = extractVideoId(url);
+  const playlistId = extractPlaylistId(url);
+  const index = extractIndex(url);
+  if (videoId && playlistId) {
+    return {
+      type: 'playlist',
+      playlistId,
+      videoId,
+      index,
+    };
+  }
+  if (playlistId) {
+    return {
+      type: 'playlist',
+      playlistId,
+      index,
+    };
+  } else {
+    return {
+      type: 'video', 
+      videoId,
+    };
+  }
+};
+
 function Room() {
   const navigate = useNavigate();
   const { roomId } = useParams();
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [videoId, setVideoId] = useState('');
+  const [playlistId, setPlaylistId] = useState('');
+  const [playlistIndex, setPlaylistIndex] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -39,7 +82,7 @@ function Room() {
   const [showCodeCopied, setShowCodeCopied] = useState(false);
   const usernameInputRef = useRef(null);
   const lastEventTime = useRef(0);
-  const [isHost, setIsHost] = useState(false);
+  //const [isHost, setIsHost] = useState(false);
   const initiatingAction = useRef(false);
 
   const onPlayerStateChange = (event) => {
@@ -65,9 +108,8 @@ function Room() {
 
   const onPlayerSeek = () => {
     if (isIncomingEvent.current || isSeeking.current) return;
-
-    console.log('Sending seek event, timestamp:', currentTime);
     const currentTime = playerRef.current.getCurrentTime();
+    console.log('Sending seek event, timestamp:', currentTime);
     socketRef.current.emit('seek-video', { roomId, timestamp: currentTime });
   };
 
@@ -92,21 +134,41 @@ function Room() {
 
     socket.on('room-state', (state) => {
       if (state.videoUrl) {
-        const id = extractVideoId(state.videoUrl);
-        if (id) setVideoId(id);
+        const parsed = parseYtUrl(state.videoUrl);
+        if (parsed.type == 'video') {
+          setVideoId(parsed.videoId);
+          setPlaylistId('');
+        }
+        if (parsed.type == 'playlist') {
+          setPlaylistId(parsed.playlistId);
+          if(parsed.videoId) setVideoId(parsed.videoId);
+          else setVideoId('');
+          setPlaylistIndex(parsed.index);
+        }
       }
       if (state.messages) setMessages(state.messages);
       if (state.users) setUsers(state.users);
     });
 
-
     socket.on('video-loaded', (data) => {
-      const id = extractVideoId(data.videoUrl);
-      if (id) {
-        setVideoId(id);
-        setError('');
+      const parsed = parseYtUrl(data.videoUrl);
+      if (parsed.type == 'video') {
+        console.log('Setting videoId:', parsed.videoId);
+        setVideoId(parsed.videoId);
+        setPlaylistId('');
       }
+      if (parsed.type == 'playlist') {
+        console.log('Setting playlistId:', parsed.playlistId);
+        setPlaylistId(parsed.playlistId);
+        if(parsed.videoId) setVideoId(parsed.videoId);
+        else setVideoId('');
+        setPlaylistIndex(parsed.index);
+      }
+      setError('');
+      setIsLoading(false); 
+      console.log('Set isLoading to false');
     });
+
 
     // Listen for Play/Pause from others
     socket.on('video-play', (data) => {
@@ -209,26 +271,37 @@ function Room() {
 
   // Initialize Player when VideoId changes
   useEffect(() => {
-    if (!videoId) return;
-
+    if (!videoId && !playlistId) {
+      console.log('No videoId or playlistId, exiting');
+      return;
+    }
     // Small delay to ensure the 'youtube-player' div exists
     const initPlayer = () => {
       if (playerRef.current) {
-        playerRef.current.loadVideoById(videoId);
+        console.log('Player exists, loading new content');
+        if (playlistId) {
+          playerRef.current.loadPlaylist({ 
+            list: playlistId,
+            ...(playlistIndex !== null && { index: playlistIndex })
+          });
+        } else if (videoId) {
+          playerRef.current.loadVideoById(videoId);
+        }
       } else if (window.YT && window.YT.Player) {
+        console.log('Creating new player');
         playerRef.current = new window.YT.Player('youtube-player', {
-          videoId: videoId,
+          videoId: videoId || undefined,
+            playerVars: playlistId
+              ? {
+                  listType: 'playlist',
+                  list: playlistId,
+                  ...(playlistIndex != null && { index: playlistIndex }),
+                }
+              : {},
           events: {
             'onStateChange': onPlayerStateChange,
             'onReady': (event) => {
               setIsLoading(false);
-              // SET UP SEEK DETECTION
-              // remove the following section - seeks every second - causes issues when delay
-              /*setInterval (() => {
-                if (playerRef.current && playerRef.current.getPlayerState) {
-                  onPlayerSeek();
-                }
-              }, 1000);*/
               let lastKnownTime = 0;
               setInterval(() => {
                 if (playerRef.current && playerRef.current.getPlayerState){
@@ -251,7 +324,7 @@ function Room() {
     } else {
       window.onYouTubeIframeAPIReady = initPlayer;
     }
-  }, [videoId]);
+  }, [videoId, playlistId, playlistIndex]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -274,17 +347,23 @@ function Room() {
     }
   };
 
-
   const handleLoadVideo = () => {
-    if (!youtubeUrl.trim()) {
-      //socketRef.current.emit('load-video', { roomId, videoUrl: youtubeUrl.trim() });
-      setError('Please enter a YouTube URL');
+    const url = youtubeUrl.trim();
+    if(!url) {
+      setError('Please enter a Youtube Url');
       return;
     }
-
-    const id = extractVideoId(youtubeUrl.trim());
-    if(!id) {
-      setError('Invalid YouTube URL. Please check and try again.');
+    const parsed = parseYtUrl(url);
+    console.log('1. PARSED URL:', parsed);
+    if (!parsed) {
+      setError('URL not parsed');
+    }
+    if (parsed.type == 'video' && !parsed.videoId) {
+      setError('Invalid YouTube Video URL. Please check and try again.');
+      return;
+    }
+    if (parsed.type == 'playlist' && !parsed.playlistId) {
+      setError('Invalid YouTube Playlist URL. Please check and try again.');
       return;
     }
 
@@ -294,6 +373,20 @@ function Room() {
       socketRef.current.emit('load-video', { roomId, videoUrl: youtubeUrl.trim() });
     }
   };
+  
+  /*
+  const handleLoadVideo = () => {
+    const url = youtubeUrl.trim();
+    if(!url) {
+      setError('Please enter a Youtube Url');
+      return;
+    }
+    const parsed = parseYtUrl(url);
+    console.log('PARSED URL:', parsed);
+
+    return;
+  }
+  */
 
   const handleSendMessage = () => {
     if (messageInput.trim() && socketRef.current) {
@@ -413,7 +506,7 @@ function Room() {
               {/* IMPORTANT: Use a div with a specific ID, not an iframe tag */}
               <div id="youtube-player" className="w-full h-full"></div>
               
-              {!videoId && (
+              {!videoId && !playlistId && (
                 <div className="absolute inset-0 flex items-center justify-center text-[#928374]">
                   No video loaded
                 </div>
