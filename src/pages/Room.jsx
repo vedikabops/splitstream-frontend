@@ -249,7 +249,7 @@ function Room() {
       setMessages(prev => [...prev, {
         type: 'system',
         message: `${data.username} joined the room`,
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toISOString()
       }]);
     });
 
@@ -258,7 +258,7 @@ function Room() {
       setMessages(prev => [...prev, {
         type: 'system',
         message: `${data.username} left the room`,
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toISOString()
       }]);
     });
 
@@ -400,13 +400,18 @@ function Room() {
   }
   */
 
+  const formatTime = (isoString) => {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString();
+  }
+
   const handleSendMessage = () => {
     if (messageInput.trim() && socketRef.current) {
       const message = {
         roomId,
         username,
         message: messageInput.trim(),
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toISOString()
       };
       
       socketRef.current.emit('send-message', message);
@@ -562,7 +567,7 @@ function Room() {
                   <div key={index} className={`p-3 rounded-lg ${msg.username === username ? 'bg-[#fe8019] bg-opacity-30 ml-8' : 'bg-[#504945] mr-8'}`}>
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-bold text-[#ebdbb2] text-sm">{msg.username}</span>
-                      <span className="text-xs text-[#928374]">{msg.timestamp}</span>
+                      <span className="text-xs text-[#928374]">{formatTime(msg.timestamp)}</span>
                     </div>
                     <p className="text-[#ebdbb2] text-sm">{msg.message}</p>
                   </div>
