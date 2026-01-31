@@ -4,6 +4,7 @@ import io from 'socket.io-client';
 
 const extractVideoId = (url) => {
   const patterns = [
+    /shorts\/([^?&/]+)/,
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&\n?#]+)/,
     /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
   ];
@@ -23,6 +24,7 @@ const extractPlaylistId = (url) => {
   const match = url.match(/[?&]list=([^&]+)/);
   return match ? match[1] : null;
 };
+
 
 const extractIndex = (url) => {
   const match = url.match(/[?&](index|start_radio)=(\d+)/);
