@@ -268,7 +268,7 @@ function Room() {
       setUsers(users);
     });
 
-    socket.on('error', (data) => {
+    socket.on('server-error', (data) => {
       setError(data.message);
       setIsLoading(false);
     });
