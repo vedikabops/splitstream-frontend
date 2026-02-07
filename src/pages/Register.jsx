@@ -6,8 +6,11 @@ function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordStrength, setPasswordStrength] = useState(0);
+    const [passwordMatch, setPasswordMatch] = useState(null);
     const [username, setUsername] = useState('');
     const [error, setError] = useState(null);
+    const [emailError, setEmailError] = useState('');
     const navigate = useNavigate();
 
     //functions
@@ -39,9 +42,24 @@ function Register() {
         }
     }
 
+    const isValidEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    const getStrongPassword = (password) => {
+        let strength = 0;
+
+        if (password.length >= 8) strength++;
+        if (/\d/.test(password)) strength++;  // has number 
+        if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength++; // has special char
+        return strength;
+    };
+
     const handleGoogleLogin = async () => {
         window.location.href = 'http://localhost:5000/auth/google';
     }
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#282828] via-[#3c3836] to-[#282828] flex items-center justify-center p-6">
@@ -68,8 +86,14 @@ function Register() {
                   type="text"
                   value={email}
                   onChange={(e) => {
-                    setEmail(e.target.value);
-                      setError('');
+                    const value = e.target.value;
+                    setEmail(value);
+                    if (!isValidEmail(value) && value) {
+                        setEmailError('Invalid Email Format');
+                    } else {
+                        setEmailError('');
+                    }
+                    setError('');
                   }}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -81,12 +105,17 @@ function Register() {
                   className="w-full bg-[#504945] text-[#ebdbb2] px-4 py-3 rounded-lg mb-4 text-lg focus:outline-none focus:ring-2 focus:ring-[#b8bb26]"
                   maxLength={50}
                 />
+                {emailError && (
+                    <p className="text-[#fb4934] text-sm -mt-3 mb-3">{emailError}</p>
+                )}
                 <input id="password-input"
                   type="password"
                   value={password}
                   onChange={(e) => {
-                    setPassword(e.target.value);
-                      setError('');
+                    const value = e.target.value;
+                    setPassword(value);
+                    setPasswordStrength(getStrongPassword(value));
+                    setError('');
                   }}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -98,12 +127,35 @@ function Register() {
                   className="w-full bg-[#504945] text-[#ebdbb2] px-4 py-3 rounded-lg mb-4 text-lg focus:outline-none focus:ring-2 focus:ring-[#b8bb26]"
                   maxLength={50}
                 />
+                <div className="mt-2">
+                    <p className="text-sm text-[#928374]">
+                        Password Strength: 
+                        <span className={
+                        passwordStrength === 0 ? "text-[#fb4934]" :
+                        passwordStrength === 1 ? "text-[#fe8019]" :
+                        passwordStrength === 2 ? "text-[#fabd2f]" :
+                        "text-[#b8bb26]"
+                        }>
+                        {passwordStrength === 0 ? " Too Weak" :
+                        passwordStrength === 1 ? " Weak" :
+                        passwordStrength === 2 ? " Medium" :
+                        " Strong"}
+                        </span>
+                    </p>
+                    <p className="p-3 text-sm text-[#ebdbb2]">Password should have more than 8 characters, and contain at least one number and special character.</p>
+                </div>
                 <input id="confirm-password-input"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                      setError('');
+                    const value = e.target.value;
+                    setConfirmPassword(value);
+                    if (value) {
+                        setPasswordMatch(password === value);
+                    } else {
+                        setPasswordMatch(null); // Reset if field is empty
+                    }
+                    setError('');
                   }}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -114,6 +166,11 @@ function Register() {
                   className="w-full bg-[#504945] text-[#ebdbb2] px-4 py-3 rounded-lg mb-4 text-lg focus:outline-none focus:ring-2 focus:ring-[#b8bb26]"
                   maxLength={50}
                 />
+                {passwordMatch !== null && (
+                    <p className={`text-sm -mt-3 mb-3 ${passwordMatch ? "text-[#b8bb26]" : "text-[#fb4934]"}`}>
+                        {passwordMatch ? "✓ Passwords match" : "✗ Passwords don't match"}
+                    </p>
+                )}
                 {error && (
                   <p className="text-[#fb4934] text-sm mb-3">{error}</p>
                 )}
