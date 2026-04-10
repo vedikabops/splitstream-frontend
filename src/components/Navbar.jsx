@@ -18,7 +18,7 @@ function Navbar({ user }) {
                     className="w-10 h-10 rounded-full border-2 border-[#83a598]"
                 />
               <span className="text-[#ebdbb2]">{user.name}</span>
-              <button onClick={() => window.location.href= 'http://localhost:5000/auth/logout'} className='bg-[#83a598] hover:bg-[#458588] text-[#282828] font-bold py-2 px-6 rounded-lg transition-colors'>Logout</button>
+              <button onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/auth/logout`} className='bg-[#83a598] hover:bg-[#458588] text-[#282828] font-bold py-2 px-6 rounded-lg transition-colors'>Logout</button>
             </div>
           ) : (
             <Link
