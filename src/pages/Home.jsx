@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import RoomTypeModal from '../components/RoomTypeModal';
 
 function Home() {
   const navigate = useNavigate();
@@ -9,6 +10,7 @@ function Home() {
   const [activeRooms, setActiveRooms] = useState(0);
   const [user, setUser] = useState(null); 
   const [error, setError] = useState('');
+  const [showRoomTypeModal, setShowRoomTypeModal] = useState(false);
 
   useEffect (() => {
     fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/health`)
@@ -52,10 +54,34 @@ function Home() {
     return code;
   };
 
-  const handleCreateRoom = () => {
-    const roomCode = generateRoomCode();
-    navigate(`/room/${roomCode}`);
+  const handleCreateRoom = async () => {
+    if (user) {
+      setShowRoomTypeModal(true);
+    } else {
+      const roomCode = generateRoomCode();
+      navigate(`/room/${roomCode}`);
+    }
   };
+
+  const handleSelectType = async (roomType) => {
+    setShowRoomTypeModal(false);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/rooms/create`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json'},
+        body: JSON.stringify({roomType: roomType }) 
+      });
+      const data = await response.json();   
+      if (response.ok) {  
+        navigate(`/room/${data.roomCode}`);
+      } else {
+        console.error('Failed to create room:', data.error);
+      }
+    } catch (err) {
+      console.error("Failed to create room:", err);
+    }
+  }
 
   const handleJoinRoom = () => {
     if(!joinCode.trim()){
@@ -67,11 +93,8 @@ function Home() {
     navigate(`/room/${cleanCode}`);
   };
 
-  /*
-  const handleSignIn = () => {
-    window.location.href = 'http://localhost:5000/auth/google';
-  };
-  */
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#282828] via-[#3c3836] to-[#282828]">
@@ -150,6 +173,7 @@ function Home() {
           </div>  
         </div>
       </div>
+      <RoomTypeModal isOpen={showRoomTypeModal} onClose={() => setShowRoomTypeModal(false)} onSelectType={handleSelectType} />
     </div>
   );
 }

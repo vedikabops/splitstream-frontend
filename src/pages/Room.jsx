@@ -66,6 +66,8 @@ const parseYtUrl = (url) => {
 function Room() {
   const navigate = useNavigate();
   const { roomId } = useParams();
+  const [roomInfo, setRoomInfo] = useState(null);
+  const [isHost, setIsHost] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [videoId, setVideoId] = useState('');
   const [playlistId, setPlaylistId] = useState('');
@@ -86,11 +88,12 @@ function Room() {
   const [showUsernameModal, setShowUsernameModal] = useState(true);
   const [tempUsername, setTempUsername] = useState('');
   const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [showCopied, setShowCopied] = useState(false);
   const [showCodeCopied, setShowCodeCopied] = useState(false);
+  const [showOverlayMessage, setShowOverlayMessage] = useState(false);
   const usernameInputRef = useRef(null);
   const lastEventTime = useRef(0);
-  //const [isHost, setIsHost] = useState(false);
   const initiatingAction = useRef(false);
 
   const onPlayerStateChange = (event) => {
@@ -129,6 +132,35 @@ function Room() {
       const firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     }
+
+    // get current logged-in user details
+    let fetchedUser = null;
+    fetch(`${import.meta.env.VITE_API_URL || 'https://localhost:5000'}/api/user`, {
+      credentials: 'include'
+    })
+      .then(res => res.json())
+      .then(userData => { 
+        fetchedUser = userData;
+        setCurrentUser(userData);
+
+        return fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/rooms/${roomId}`, {
+          credentials: 'include'
+        });
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setRoomInfo(data);
+          // check is current user is host
+          if(fetchedUser && fetchedUser.id === data.hostId) {
+            console.log('You are the host!');
+            setIsHost(true);
+          } else {
+            console.log('Not the host or not logged in');
+          }
+        }
+      })
+      .catch(err => console.error('Failed to fetch room info:', err));
 
     // Setup Socket
     const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
@@ -264,6 +296,10 @@ function Room() {
       }]);
     });
 
+    socket.on('room-type-changed', ({ roomType }) => {
+      setRoomInfo(prev => ({ ...prev, roomType }));
+    });
+
     socket.on('users-update', (users) => {
       setUsers(users);
     });
@@ -273,9 +309,11 @@ function Room() {
       setIsLoading(false);
     });
 
-
-    return () => socket.disconnect();
-  }, [roomId, username]);
+    return () => {
+      socket.off('room-type-changed');
+      socket.disconnect();
+    }
+  }, [roomId]);
 
   // Initialize Player when VideoId changes
   useEffect(() => {
@@ -357,7 +395,7 @@ function Room() {
     setShowUsernameModal(false);
     // join room with username
     if (socketRef.current) {
-      socketRef.current.emit('join-room', { roomId, username: name });
+      socketRef.current.emit('join-room', { roomId, username: name, userId: currentUser?.id || null});
     }
   };
 
@@ -444,6 +482,51 @@ function Room() {
     navigate('/');
   };
 
+  const getRoomTypeBadge = () => {
+    if (!roomInfo) return null;
+    const isCollaborative = roomInfo.roomType === 'collaborative';
+    return (
+      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${ isCollaborative ? 'bg-[#b8bb26] text-[#282828]' : 'bg-[#fe8019] text-[#282828]'}`}>
+        {isCollaborative ? 'Collaborative' : 'Presentation'}
+      </span>
+    );
+  };
+
+  const handleToggleRoomType = async() => {
+    const newType = roomInfo.roomType === 'collaborative' ? 'presentation' : 'collaborative';
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/rooms/${roomId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ roomType: newType })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setRoomInfo(prev => ({ ...prev, roomType: data.roomType }));
+      }
+    } catch (err) {
+      console.error('Failed to change room type:', err);
+    }
+  };
+
+  const canControl = () => {
+    console.log('canControl check:', {
+      roomInfo,
+      roomType: roomInfo?.roomType,
+      isHost
+    });
+    if (!roomInfo || roomInfo.roomType === 'collaborative') {
+      return true;
+    }
+    if (roomInfo.roomType === 'presentation') {
+      return isHost;
+    }
+    return true; // allow control by default
+  };
+
   return (
     <>
       {showUsernameModal && (
@@ -468,12 +551,21 @@ function Room() {
           </div>
         </div>
       )}
-    <div className="min-h-screen bg-[#282828] p-6">
+    <div className="min-h-screen bg-[#282828] p-3 md:p-6">
       <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          <div>
-            <h1 className="text-3xl font-bold text-[#ebdbb2]">Room: <span className="text-[#fe8019]">{roomId}</span>
-            </h1>
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#ebdbb2]">
+                Room: <span className="text-[#fe8019]">{roomId}</span>
+              </h1>
+              {getRoomTypeBadge()}
+              {isHost && roomInfo && (
+                <button onClick={handleToggleRoomType} className="px-3 py-1 rounded-full text-sm font-semibold bg-[#504945] hover:bg-[#665c54] text-[#ebdbb2] transition-colors">
+                  Switch to {roomInfo.roomType === 'collaborative' ? 'Presentation' : 'Collaborative'}
+                </button>
+              )}
+            </div>
             <p className="text-[#928374] text-sm">Share this code with friends to invite them</p>
           </div>
           <div className="grid grid-cols-2 md:flex md:gap-3 w-full md:w-auto gap-2">
@@ -509,10 +601,12 @@ function Room() {
                     setError('');
                   }}
                   onKeyPress={(e) => e.key === 'Enter' && handleLoadVideo()}
-                  className="flex-1 min-w-0 bg-[#504945] text-[#ebdbb2] px-3 py-2 lg:py-3 rounded-lg text-sm lg:text-base"
-                  placeholder="Paste YouTube URL..."
+                  disabled={!canControl()}
+                  className={`flex-1 min-w-0 bg-[#504945] text-[#ebdbb2] px-3 py-2 lg:py-3 rounded-lg text-sm lg:text-base ${!canControl() ? 'opacity-50 cursor-not-allowed':''}`}              
+                  //placeholder="Paste YouTube URL..."
+                  placeholder={canControl() ? "Paste Youtube URL.." : "Only host can load video"}
                 />
-                <button onClick={handleLoadVideo} disabled={isLoading} className="flex-shrink-0 bg-[#fe8019] hover:bg-[#d65d0e] disabled:bg-[#504945] text-[#282828] px-6 py-3 rounded-lg font-bold transition-colors">
+                <button onClick={handleLoadVideo} disabled={isLoading || !canControl()} className="flex-shrink-0 bg-[#fe8019] hover:bg-[#d65d0e] disabled:bg-[#504945] text-[#282828] px-6 py-3 rounded-lg font-bold transition-colors">
                   {isLoading ? 'Loading...' : <span className="hidden sm:inline">Load Video</span>}
                   {!isLoading && <span className="sm:hidden">Load</span>}
                 </button>
@@ -527,7 +621,22 @@ function Room() {
               <div className="w-full aspect-video bg-black rounded-lg overflow-hidden relative">
                 {/* IMPORTANT: Use a div with a specific ID, not an iframe tag */}
                 <div id="youtube-player" className="absolute inset-0 w-full h-full"></div>
-                
+
+                {!canControl() && roomInfo && (
+                  <div className="absolute inset-0 z-10 cursor-not-allowed"
+                    onMouseEnter={() => setShowOverlayMessage(true)}
+                    onMouseLeave={() => setShowOverlayMessage(false)}
+                  >
+                    {/* Desktop: show on hover. Mobile: always show */}
+                    <div className={`absolute bottom-4 right-4 z-20 bg-[#3c3836] px-4 py-3 rounded-lg border-2 border-[#fe8019] shadow-lg
+                      md:transition-opacity md:duration-150
+                      ${showOverlayMessage ? 'md:opacity-100' : 'md:opacity-0'}
+                    `}>
+                      <p className="text-[#ebdbb2] font-semibold">🔒 Only host can control playback</p>
+                    </div>
+                  </div>
+                )}
+
                 {!videoId && !playlistId && (
                   <div className="absolute inset-0 flex items-center justify-center text-[#928374]">
                     No video loaded
@@ -537,7 +646,7 @@ function Room() {
             </div>
         </div>
 
-        <div className="w-full lg:w-[30%] h-[500px] lg:h-full bg-[#3c3836] rounded-lg border border-[#504945] flex flex-col">
+        <div className="w-full lg:w-[30%] h-[60-vh] lg:h-full bg-[#3c3836] rounded-lg border border-[#504945] flex flex-col">
           {/* Users list */}
           <div className="bg-[#3c3836] rounded-lg border border-[#504945] p-4">
             <h2 className="text-lg font-bold text-[#ebdbb2] mb-3">
@@ -547,7 +656,12 @@ function Room() {
               {users.map((user, index) => (
                 <div key={index} className="flex items-center gap-2 text-[#ebdbb2] text-sm">
                   <span className="w-2 h-2 bg-[#b8bb26] rounded-full"></span>
-                  <span>{user}</span>
+                  <span>
+                    {user.name || user}
+                    {user.userId && user.userId === roomInfo?.hostId && (
+                      <span className="ml-2 text-xs text-[#fe8019] font-semibold">(host)</span>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
