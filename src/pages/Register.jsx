@@ -26,7 +26,7 @@ function Register() {
             return;   
         }
         try {
-            const response = await fetch('http://localhost:5000/auth/register', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: username, email, password })
@@ -57,7 +57,7 @@ function Register() {
     };
 
     const handleGoogleLogin = async () => {
-        window.location.href = 'http://localhost:5000/auth/google';
+        window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
     }
 
 
