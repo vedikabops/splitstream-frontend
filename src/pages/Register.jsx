@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../lib/api';
 
 function Register() {
     // state variables
@@ -26,7 +27,7 @@ function Register() {
             return;   
         }
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+            const response = await fetch(`${API_BASE_URL}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: username, email, password })
@@ -57,7 +58,7 @@ function Register() {
     };
 
     const handleGoogleLogin = async () => {
-        window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+        window.location.href = `${API_BASE_URL}/auth/google`;
     }
 
 

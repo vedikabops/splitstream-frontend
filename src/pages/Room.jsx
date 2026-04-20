@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import io from 'socket.io-client';
+import { API_BASE_URL } from '../lib/api';
 
 const extractVideoId = (url) => {
   const patterns = [
@@ -135,7 +136,7 @@ function Room() {
 
     // get current logged-in user details
     let fetchedUser = null;
-    fetch(`${import.meta.env.VITE_API_URL || 'https://localhost:5000'}/api/user`, {
+    fetch(`${API_BASE_URL}/api/user`, {
       credentials: 'include'
     })
       .then(res => res.json())
@@ -143,7 +144,7 @@ function Room() {
         fetchedUser = userData;
         setCurrentUser(userData);
 
-        return fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/rooms/${roomId}`, {
+        return fetch(`${API_BASE_URL}/api/rooms/${roomId}`, {
           credentials: 'include'
         });
       })
@@ -163,7 +164,7 @@ function Room() {
       .catch(err => console.error('Failed to fetch room info:', err));
 
     // Setup Socket
-    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+    const socket = io(API_BASE_URL, { withCredentials: true });
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -496,7 +497,7 @@ function Room() {
     const newType = roomInfo.roomType === 'collaborative' ? 'presentation' : 'collaborative';
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/rooms/${roomId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

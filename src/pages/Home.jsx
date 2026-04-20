@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import RoomTypeModal from '../components/RoomTypeModal';
+import { API_BASE_URL } from '../lib/api';
 
 function Home() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ function Home() {
   const [showRoomTypeModal, setShowRoomTypeModal] = useState(false);
 
   useEffect (() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/health`)
+    fetch(`${API_BASE_URL}/health`)
       .then(res => res.json())
       .then(data => {
         setActiveRooms(data.activeRooms || 0);
@@ -21,7 +22,7 @@ function Home() {
       })
       .catch(err => console.error('Failed to fetch stats:', err));
     
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/user`, {
+    fetch(`${API_BASE_URL}/api/user`, {
       credentials: 'include'
     })
       .then(res => res.json())
@@ -33,7 +34,7 @@ function Home() {
 
     //refreshing stats every 10 secs
     const interval = setInterval(() => {
-      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/health`)
+      fetch(`${API_BASE_URL}/health`)
         .then(res => res.json())
         .then(data => {
           setActiveRooms(data.activeRooms || 0);
@@ -66,7 +67,7 @@ function Home() {
   const handleSelectType = async (roomType) => {
     setShowRoomTypeModal(false);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/rooms/create`, {
+      const response = await fetch(`${API_BASE_URL}/api/rooms/create`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json'},
