@@ -165,8 +165,7 @@ function Room() {
 
     // Setup Socket
     const socket = io("https://splitserver-backend.onrender.com", {
-      withCredentials: true,
-      transports: ["websocket"]
+      withCredentials: true
     });
     socketRef.current = socket;
 
