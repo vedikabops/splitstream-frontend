@@ -23,8 +23,7 @@ function Home() {
       .catch(err => console.error('Failed to fetch stats:', err));
     
     fetch(`${API_BASE_URL}/api/user`, {
-      credentials: 'include',
-      cache: 'no-store'
+      credentials: 'include'
     })
       .then(res => res.json())
       .then(data => {
