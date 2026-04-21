@@ -164,7 +164,10 @@ function Room() {
       .catch(err => console.error('Failed to fetch room info:', err));
 
     // Setup Socket
-    const socket = io(API_BASE_URL, { withCredentials: true });
+    const socket = io("https://splitserver-backend.onrender.com", {
+      withCredentials: true,
+      transports: ["websocket"]
+    });
     socketRef.current = socket;
 
     socket.on('connect', () => {
